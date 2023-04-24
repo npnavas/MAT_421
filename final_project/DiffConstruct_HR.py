@@ -15,6 +15,7 @@ def construct_Ann(gamma, Nmax): #Adapted by Tristin Might be wrong
     Tridiagonal matrix A_(nxn), (see derivation).
     '''
     # use np.diag(array) to make diagonal matrices with diagonals of my 1D-arrays
+    dr = 1/Nmax
     return np.diag(-2/dr**2*np.ones((Nmax))) + np.diag((1+1/(2*np.linspace(2,Nmax, Nmax-1)))/dr**2, -1) + np.diag((1-1/(2*np.linspace(1,Nmax-1, Nmax-1)))/dr**2, 1)
 
 # Constructs B_mm for HRN
@@ -64,7 +65,7 @@ def construct_Enn(gamma, Nmax):
     return construct_Znn(gamma, Nmax)[1].dot(construct_Ann(gamma, Nmax).dot(np.linalg.inv(construct_Znn(gamma, Nmax)[1])))
 
 # Constructs F_nm for HRN
-def construct_Fnm(eta, dr, gamma, Nmax, Mmax): #Writen By Tristin --Very possibly wrong
+def construct_Fnm(eta, dr, gamma, Nmax, Mmax):
     '''
     PARAMETERS
     ----------

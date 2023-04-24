@@ -26,12 +26,13 @@ tol = 1e-5
 iter_count = 0
 max_iter = 100000
 
+# animation set up #
 soln = bc.set_v_boundaries(Nmax, Mmax)
 soln_anim = np.zeros((int(max_iter/50), Nmax, Mmax), dtype = np.float64)
 soln_anim[:,:,:] = soln
 
+# Integrator #
 v_n = np.copy(soln)
-
 for n in range(max_iter):
     soln = rk.RK2_LR(v_n, dr, dz, Nmax, Mmax, Re, dt)
     if n % 50 == 0:

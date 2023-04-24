@@ -71,6 +71,7 @@ def TDMAsolver(a, b, c, d): # Thanks to the person I stole this from github gist
     return xc
 
 ## RK2 methods LRN ##
+# Low Reynolds Number RK2 #
 def RHS_LR_T(v, dr, dz, Nmax, Mmax, Re = 1):
     '''
     PARAMETERS
@@ -124,4 +125,86 @@ def RK2_LR(v, dr, dz, Nmax, Mmax, Re = 1, dt = 1e-5):
     predict = v + RHS_LR_T(v, dr, dz, Nmax, Mmax, Re = 1) * dt
 
     corrected = v + 0.5 * dt * (RHS_LR_T(v, dr, dz, Nmax, Mmax, Re = 1) + RHS_LR_T(predict, dr, dz, Nmax, Mmax, Re = 1))
+    return corrected
+
+# High Reynolds Number RK2 #
+def RHS_HR_V_T(v, psi, dr, dz, Re):
+    '''
+    PARAMETERS
+    ----------
+    v: Array for the current velocity of fluid
+    psi: Array for the current streamfunction
+    dr: Spacing between r-gridpoints
+    dz: Spacing between z-gridpoints
+    Re: Reynolds number
+
+    RETRUNS
+    -------
+    '''
+    Nmax, Mmax = np.shape(v)
+    u = np.zeros_like(v,dtype = "float64")
+
+    psi_r = (psi[2:,1:-1]-psi[:-2,1:-1])/(2*dr)
+    psi_z = (psi[1:-1,2:]-psi[1:-1,:-2])/(2*dz)
+
+    v_r = (v[2:,1:-1]-v[:-2,1:-1])/(2*dr)
+    v_z = (v[1:-1,2:]-v[1:-1,:-2])/(2*dz)
+
+    v_rr = (v[2:,1:-1]-2*v[1:-1,1:-1]+v[:-2,1:-1])/(dr**2)
+    v_zz = (v[1:-1,2:]-2*v[1:-1,1:-1]+v[1:-1,:-2])/(dz**2)
+
+    i = np.indices(np.shape(v))[0]
+    i = i + np.ones_like(i)
+    i = i[1:-1,1:-1]
+
+    u[1:-1,1:-1]  = 1/(i*dr)*psi_z*(v_r+v[1:-1,1:-1]/(i*dr))-psi_r*v_z/(i*dr)+1/Re*(v_rr+v_r/(i*dr)-v[1:-1,1:-1]/np.power(dr*i,2)+v_zz)
+    return u #+ RHS_LR_T(v, dr, dz, Nmax, Mmax, Re)
+
+def RHS_HR_ETA_T(v, psi, eta, dr, dz, Re):
+    '''
+    PARAMETERS
+    ----------
+    v: Array for the current velocity of fluid
+    psi: Array for the current streamfunction
+    eta: Array for the vorticity
+    dr: r-gridpoint spacing
+    dz: z-gridpoint spacing
+    Re: Reynolds number
+
+    RETRUNS
+    -------
+    Current time derivative of the vorticity
+    '''
+    Nmax, Mmax = np.shape(v)
+    detadt = np.zeros_like(v,dtype = "float64")
+
+    psi_r = (psi[2:,1:-1]-psi[:-2,1:-1])/(2*dr)
+    psi_z = (psi[1:-1,2:]-psi[1:-1,:-2])/(2*dz)
+
+    v_r = (v[2:,1:-1]-v[:-2,1:-1])/(2*dr)
+    v_z = (v[1:-1,2:]-v[1:-1,:-2])/(2*dz)
+
+    eta_r = (eta[2:,1:-1]-eta[:-2,1:-1])/(2*dr)
+    eta_z = (eta[1:-1,2:]-eta[1:-1,:-2])/(2*dz)
+
+    eta_rr = (eta[2:,1:-1]-2*eta[1:-1,1:-1]+eta[:-2,1:-1])/(dr**2)
+    eta_zz = (eta[1:-1,2:]-2*eta[1:-1,1:-1]+eta[1:-1,:-2])/(dz**2)
+
+    i = np.indices(np.shape(v))[0]
+    i = i + np.ones_like(i)
+    i = i[1:-1,1:-1]
+
+    eta_m = eta[1:-1,1:-1]
+
+    detadt[1:-1,1:-1]  = (psi_z*eta_r)/(i*dr) - (psi_r*eta_z)/(i*dr) - eta_m/((i*dr)**2)*psi_z+2*(v[1:-1,1:-1]*v_z)/(i*dr) + 1/Re * (eta_rr + (eta_r)/(i*dr) - eta_m/((i*dr)**2) + eta_zz)
+    return detadt #+ RHS_LR_T(eta, dr, dz, Nmax, Mmax, Re)
+
+def RK2_HR_V(v, psi, dr, dz, Re, dt):
+    predict = v + RHS_HR_V_T(v, psi, dr, dz, Re)
+    corrected = v+ 0.5 * dt *(RHS_HR_V_T(v, psi, dr, dz, Re) + RHS_HR_V_T(predict, psi, dr, dz, Re))
+    return corrected
+
+def RK2_HR_eta(v, psi, eta, dr, dz, Re, dt):
+    predict = eta + RHS_HR_ETA_T(v, psi, eta, dr, dz, Re)
+    corrected = eta + 0.5 * dt * (RHS_HR_ETA_T(v, psi, eta, dr, dz, Re)+ RHS_HR_ETA_T(v, psi, predict, dr, dz, Re))
     return corrected
